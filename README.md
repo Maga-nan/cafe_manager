@@ -4,4 +4,4 @@
 # Команда:
 # Product owner -Илютко 
 # Scrum Master -Илютко
-# Developer - Илютко
+# Developer - Погребан
