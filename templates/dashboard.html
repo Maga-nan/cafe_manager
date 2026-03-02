@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>👋 Добро пожаловать, {{ current_user.username }}!</h1>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>📦 Заказы</h3>
+            <p class="stat-number">{{ current_user.orders|length }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>👤 Роль</h3>
+            <p class="stat-number">{{ current_user.role }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>📅 Дата входа</h3>
+            <p class="stat-number">{{ current_user.created_at.strftime('%d.%m.%Y') }}</p>
+        </div>
+    </div>
+
+    <div class="action-grid">
+        <a href="{{ url_for('orders.create_order') }}" class="action-card">
+            <h3>🛒 Создать заказ</h3>
+            <p>Оформить новый заказ клиента</p>
+        </a>
+        <a href="{{ url_for('orders.orders_list') }}" class="action-card">
+            <h3>📋 Все заказы</h3>
+            <p>Просмотр и управление заказами</p>
+        </a>
+        <a href="{{ url_for('menu.menu_list') }}" class="action-card">
+            <h3>🍽️ Меню</h3>
+            <p>Управление блюдами</p>
+        </a>
+    </div>
+</div>
+{% endblock %}
