@@ -16,8 +16,7 @@ def login():
         
         if user and user.check_password(password):
             login_user(user)
-            next_page = request.args.get('next')
-            return redirect(next_page if next_page else url_for('index_dashboard'))
+            return redirect(url_for('index_dashboard'))
         else:
             flash('Неверный логин или пароль', 'error')
     
