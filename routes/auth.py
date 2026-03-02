@@ -7,7 +7,7 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('index_dashboard'))
     
     if request.method == 'POST':
         username = request.form.get('username')
@@ -16,7 +16,8 @@ def login():
         
         if user and user.check_password(password):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            next_page = request.args.get('next')
+            return redirect(next_page if next_page else url_for('index_dashboard'))
         else:
             flash('Неверный логин или пароль', 'error')
     
@@ -25,7 +26,7 @@ def login():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('index_dashboard'))
     
     if request.method == 'POST':
         username = request.form.get('username')
