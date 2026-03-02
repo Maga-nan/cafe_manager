@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Создать заказ{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🛒 Создание заказа</h1>
+    <a href="{{ url_for('orders.orders_list') }}" class="btn btn-secondary">← Назад</a>
+</div>
+
+<form method="POST" class="order-form">
+    <div class="menu-items-grid">
+        {% for item in menu_items %}
+        <div class="menu-item-card">
+            <h4>{{ item.name }}</h4>
+            <p class="item-desc">{{ item.description }}</p>
+            <p class="item-price">{{ "%.2f"|format(item.price) }} ₽</p>
+            <div class="form-group">
+                <label>Количество:</label>
+                <input type="number" name="quantity" min="0" value="0" data-item-id="{{ item.id }}">
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary btn-large">✅ Оформить заказ</button>
+</form>
+{% endblock %}
