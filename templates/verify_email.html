@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Подтверждение Email{% endblock %}
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>📧 Подтверждение Email</h2>
+        <p>Код отправлен на: <strong>{{ email }}</strong></p>
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label>Код подтверждения</label>
+                <input type="text" name="code" required placeholder="123456" maxlength="6" 
+                       style="text-align: center; font-size: 24px; letter-spacing: 5px;">
+            </div>
+            <button type="submit" class="btn btn-primary">Подтвердить</button>
+        </form>
+        <form method="POST" action="{{ url_for('auth.resend_code') }}" style="margin-top: 15px;">
+            <button type="submit" class="btn btn-secondary">📩 Отправить код повторно</button>
+        </form>
+        <p class="auth-link"><a href="{{ url_for('auth.register') }}">← Назад к регистрации</a></p>
+    </div>
+</div>
+{% endblock %}
