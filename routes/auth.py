@@ -14,8 +14,8 @@ def login():
         return redirect(url_for('index_dashboard'))
     
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
         user = User.query.filter_by(username=username).first()
         
         if user and user.check_password(password):
@@ -35,10 +35,10 @@ def register():
         return redirect(url_for('index_dashboard'))
     
     if request.method == 'POST':
-        username = request.form.get('username').strip()
-        email = request.form.get('email').strip().lower()
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
         role = request.form.get('role', 'cashier')
         
         # Проверка на пустые значения
@@ -55,16 +55,26 @@ def register():
             flash('Пароль должен быть не менее 6 символов', 'error')
             return redirect(url_for('auth.register'))
         
-        # Проверка существования пользователя
+        # 🔥 ПРОВЕРКА: существует ли пользователь с таким username или email
         existing_user = User.query.filter(
             (User.username == username) | (User.email == email)
         ).first()
         
         if existing_user:
-            if existing_user.username == username:
+            if existing_user.username.lower() == username.lower():
                 flash('Пользователь с таким логином уже существует', 'error')
-            else:
-                flash('Этот email уже зарегистрирован', 'error')
+            if existing_user.email.lower() == email.lower():
+                flash('Этот email уже зарегистрирован. Попробуйте войти или восстановить пароль.', 'error')
+            return redirect(url_for('auth.register'))
+        
+        # 🔥 ПРОВЕРКА: есть ли неподтверждённая регистрация с этим email
+        existing_pending = VerificationCode.query.filter_by(
+            email=email, 
+            is_used=False
+        ).first()
+        
+        if existing_pending and not existing_pending.is_expired():
+            flash('На этот email уже отправлен код подтверждения. Проверьте почту.', 'error')
             return redirect(url_for('auth.register'))
         
         # Генерируем код подтверждения
@@ -80,7 +90,15 @@ def register():
         session['pending_code'] = code
         
         try:
-            # Сохраняем код в БД
+            # Удаляем старые неподтверждённые коды для этого email
+            old_codes = VerificationCode.query.filter_by(
+                email=email, 
+                is_used=False
+            ).all()
+            for old_code in old_codes:
+                db.session.delete(old_code)
+            
+            # Сохраняем новый код в БД
             verification = VerificationCode(
                 email=email,
                 code=code,
@@ -114,7 +132,7 @@ def verify_email():
         return redirect(url_for('auth.register'))
     
     if request.method == 'POST':
-        code = request.form.get('code').strip()
+        code = request.form.get('code', '').strip()
         email = session['pending_registration']['email']
         
         # Ищем код в БД
@@ -129,7 +147,6 @@ def verify_email():
             return redirect(url_for('auth.verify_email'))
         
         if verification.is_expired():
-            # Удаляем истёкший код
             try:
                 db.session.delete(verification)
                 db.session.commit()
@@ -142,6 +159,19 @@ def verify_email():
             return redirect(url_for('auth.register'))
         
         try:
+            # 🔥 ФИНАЛЬНАЯ ПРОВЕРКА перед созданием пользователя
+            if User.query.filter_by(email=email).first():
+                flash('Этот email уже зарегистрирован', 'error')
+                session.pop('pending_registration', None)
+                session.pop('pending_code', None)
+                return redirect(url_for('auth.register'))
+            
+            if User.query.filter_by(username=session['pending_registration']['username']).first():
+                flash('Такой логин уже занят', 'error')
+                session.pop('pending_registration', None)
+                session.pop('pending_code', None)
+                return redirect(url_for('auth.register'))
+            
             # Создаём пользователя
             user = User(
                 username=session['pending_registration']['username'],
@@ -158,7 +188,7 @@ def verify_email():
             
         except IntegrityError:
             db.session.rollback()
-            flash('Ошибка при создании пользователя. Возможно, такой пользователь уже существует.', 'error')
+            flash('Ошибка: такие данные уже существуют. Попробуйте другой логин или email.', 'error')
             session.pop('pending_registration', None)
             session.pop('pending_code', None)
             return redirect(url_for('auth.register'))
