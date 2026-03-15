@@ -64,3 +64,12 @@ class VerificationCode(db.Model):
     
     def is_expired(self):
         return datetime.utcnow() > self.expires_at
+
+class Email(db.Model):
+    __tablename__ = 'emails'
+    id = db.Column(db.Integer, primary_key=True)
+    recipient_email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
