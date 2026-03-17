@@ -9,6 +9,6 @@ class Config:
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
-    MAIL_USERNAME = 'petrov.cafe2024@gmail.com'  # Мой Gmail
-    MAIL_PASSWORD = 'abcd efgh ijkl mnop'        # Пароль приложения
-    MAIL_DEFAULT_SENDER = 'petrov.cafe2024@gmail.com'
+    MAIL_USERNAME = 'pavelpogreban22@gmail.com'  # Мой Gmail
+    MAIL_PASSWORD = 'nulo lbnt fkol gvdi'        # Пароль приложения
+    MAIL_DEFAULT_SENDER = 'pavelpogreban22@gmail.com'
