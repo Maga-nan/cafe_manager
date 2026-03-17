@@ -4,23 +4,15 @@ from werkzeug.security import check_password_hash
 from datetime import datetime
 import os
 
-# 🔥 Указываем папку с шаблонами
+# 🔥 Указываем папку с шаблонами почты
 app = Flask(__name__, template_folder='email_templates')
 app.config['SECRET_KEY'] = 'dev-secret-key-email'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cafe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# 🔥 НАСТРОЙКИ ПОЧТЫ (Gmail) - ТВОИ ДАННЫЕ
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'pavelpogreban22@gmail.com'  # Твой Gmail
-app.config['MAIL_PASSWORD'] = 'nulo lbnt fkol gvdi'        # Твой пароль приложения
-app.config['MAIL_DEFAULT_SENDER'] = 'pavelpogreban22@gmail.com'
-
 db = SQLAlchemy(app)
 
-# Модели
+# Модели (дублируем из models.py для автономности)
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -105,7 +97,6 @@ def delete_email(email_id):
     
     db.session.delete(email)
     db.session.commit()
-    
     flash('Письмо удалено', 'success')
     return redirect(url_for('inbox'))
 
