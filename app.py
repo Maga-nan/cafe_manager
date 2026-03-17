@@ -1,19 +1,17 @@
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_login import LoginManager, current_user, login_required
-from flask_mail import Mail
 from config import Config
 from models import db, User
 from routes.auth import auth_bp
 from routes.orders import orders_bp
 from routes.menu import menu_bp
-from email_service import init_mail
+from routes.admin import admin_bp  # ← Новый blueprint
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
     db.init_app(app)
-    init_mail(app)
     
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -23,21 +21,26 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
     
+    # Регистрация blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(orders_bp, url_prefix='/orders')
     app.register_blueprint(menu_bp, url_prefix='/menu')
+    app.register_blueprint(admin_bp)  # ← Админ-маршруты
     
+    # Главный маршрут
     @app.route('/')
     def index():
         if current_user.is_authenticated:
             return redirect(url_for('index_dashboard'))
         return redirect(url_for('auth.login'))
     
+    # Dashboard
     @app.route('/dashboard')
     @login_required
     def index_dashboard():
         return render_template('dashboard.html')
     
+    # Создание БД и админа
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username='admin').first():
@@ -46,7 +49,7 @@ def create_app():
             admin.is_verified = True
             db.session.add(admin)
             db.session.commit()
-            print("✅ Создан пользователь: admin / admin123")
+            print("✅ Создан: admin / admin123")
     
     return app
 
