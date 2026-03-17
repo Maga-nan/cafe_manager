@@ -5,14 +5,13 @@ class Config:
     SQLALCHEMY_DATABASE_URI = 'sqlite:///cafe.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Настройки почты (для Gmail)
+    # 🔥 НАСТРОЙКИ ПОЧТЫ (Gmail)
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME') or 'your-email@gmail.com'
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or 'your-app-password'
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER') or 'your-email@gmail.com'
+    MAIL_USERNAME = 'your-email@gmail.com'  # 🔥 ТВОЙ Gmail
+    MAIL_PASSWORD = 'your-app-password'      # 🔥 Пароль приложения (НЕ обычный пароль!)
+    MAIL_DEFAULT_SENDER = 'your-email@gmail.com'
     
-    # Для тестов (письма не отправляются, но показываются в консоли)
+    # Для отладки (письма в консоль)
     # MAIL_SUPPRESS_SEND = False
-    # MAIL_ASCII_ATTACHMENTS = False
