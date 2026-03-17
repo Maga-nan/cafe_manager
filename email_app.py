@@ -2,15 +2,25 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash
 from datetime import datetime
+import os
 
-app = Flask(__name__)
+# 🔥 Указываем папку с шаблонами
+app = Flask(__name__, template_folder='email_templates')
 app.config['SECRET_KEY'] = 'dev-secret-key-email'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cafe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# 🔥 НАСТРОЙКИ ПОЧТЫ (Gmail) - ТВОИ ДАННЫЕ
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'pavelpogreban22@gmail.com'  # Твой Gmail
+app.config['MAIL_PASSWORD'] = 'nulo lbnt fkol gvdi'        # Твой пароль приложения
+app.config['MAIL_DEFAULT_SENDER'] = 'pavelpogreban22@gmail.com'
+
 db = SQLAlchemy(app)
 
-# Импортируем модели из основного приложения
+# Модели
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -20,6 +30,9 @@ class User(db.Model):
     role = db.Column(db.String(20), default='cashier')
     is_verified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class Email(db.Model):
     __tablename__ = 'emails'
@@ -73,7 +86,6 @@ def view_email(email_id):
         flash('Доступ запрещён', 'error')
         return redirect(url_for('inbox'))
     
-    # Помечаем как прочитанное
     if not email.is_read:
         email.is_read = True
         db.session.commit()
