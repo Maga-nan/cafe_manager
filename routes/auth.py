@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User, VerificationCode
-from email_service import send_verification_email, generate_code
+from email_service import save_verification_code, generate_code
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
@@ -43,7 +43,7 @@ def register():
         
         # Проверки
         if not username or not email or not password:
-            flash('Все поля обязательны для заполнения', 'error')
+            flash('Все поля обязательны', 'error')
             return redirect(url_for('auth.register'))
         
         if password != confirm_password:
@@ -54,7 +54,6 @@ def register():
             flash('Пароль должен быть не менее 6 символов', 'error')
             return redirect(url_for('auth.register'))
         
-        # Проверка на существование
         if User.query.filter_by(username=username).first():
             flash('Пользователь с таким логином уже существует', 'error')
             return redirect(url_for('auth.register'))
@@ -65,54 +64,38 @@ def register():
         
         # Генерируем код
         code = generate_code()
+        password_hash = generate_password_hash(password)
         
         # Сохраняем в сессию
         session['pending_registration'] = {
             'username': username,
             'email': email,
-            'password_hash': generate_password_hash(password),
+            'password_hash': password_hash,
             'role': role
         }
         
         try:
-            # Удаляем старые коды для этого email
-            old_codes = VerificationCode.query.filter_by(email=email, is_used=False).all()
-            for old in old_codes:
-                db.session.delete(old)
-            
-            # Сохраняем новый код
-            verification = VerificationCode(
-                email=email,
-                code=code,
-                username=username,
-                password_hash=generate_password_hash(password),
-                role=role,
-                expires_at=datetime.utcnow() + timedelta(minutes=10)
-            )
-            db.session.add(verification)
-            
-            # 🔥 Сохраняем письмо во внутреннюю почту
-            send_verification_email(email, code, username)
-            
-            db.session.commit()
-            
+            # Сохраняем код в базу (будет виден в /admin/codes)
+            save_verification_code(email, code, username, password_hash, role)
         except IntegrityError:
             db.session.rollback()
-            flash('Ошибка регистрации. Попробуйте другие данные.', 'error')
+            flash('Ошибка регистрации', 'error')
             return redirect(url_for('auth.register'))
         
-        flash('Код подтверждения отправлен! Проверьте Почту Cafe (порт 5001)', 'success')
-        return redirect(url_for('auth.verify_email'))
+        flash(f'✅ Регистрация! Код: {code} | Откройте окно кодов ↗', 'success')
+        return redirect(url_for('auth.verify_email', email=email))
     
     return render_template('register.html')
 
-@auth_bp.route('/verify-email', methods=['GET', 'POST'])
-def verify_email():
+@auth_bp.route('/verify-email')
+@auth_bp.route('/verify-email/<email>', methods=['GET', 'POST'])
+def verify_email(email=None):
     if 'pending_registration' not in session:
-        flash('Сначала заполните форму регистрации', 'error')
+        flash('Сначала зарегистрируйтесь', 'error')
         return redirect(url_for('auth.register'))
     
-    email = session['pending_registration']['email']
+    if email is None:
+        email = session['pending_registration']['email']
     
     if request.method == 'POST':
         code = request.form.get('code', '').strip()
@@ -124,16 +107,10 @@ def verify_email():
         ).first()
         
         if not verification:
-            flash('Неверный код подтверждения', 'error')
-            return redirect(url_for('auth.verify_email'))
+            flash('Неверный код', 'error')
+            return redirect(url_for('auth.verify_email', email=email))
         
         if verification.is_expired():
-            try:
-                db.session.delete(verification)
-                db.session.commit()
-            except:
-                db.session.rollback()
-            
             flash('Код истёк. Зарегистрируйтесь заново', 'error')
             session.pop('pending_registration', None)
             return redirect(url_for('auth.register'))
@@ -141,7 +118,7 @@ def verify_email():
         try:
             # Финальная проверка
             if User.query.filter_by(email=email).first():
-                flash('Этот email уже зарегистрирован', 'error')
+                flash('Email уже зарегистрирован', 'error')
                 session.pop('pending_registration', None)
                 return redirect(url_for('auth.register'))
             
@@ -154,28 +131,25 @@ def verify_email():
                 is_verified=True
             )
             db.session.add(user)
-            
             verification.is_used = True
             db.session.commit()
             
         except IntegrityError:
             db.session.rollback()
-            flash('Ошибка: такие данные уже существуют.', 'error')
+            flash('Ошибка: данные уже существуют', 'error')
             session.pop('pending_registration', None)
             return redirect(url_for('auth.register'))
         
-        # 🔥 ОЧИЩАЕМ сессию и ПЕРЕБРАСЫВАЕМ НА ВХОД
         session.pop('pending_registration', None)
-        
-        flash('✅ Email подтверждён! Теперь войдите в систему.', 'success')
-        return redirect(url_for('auth.login'))  # ← ПЕРЕБРОС НА СТРАНИЦУ ВХОДА!
+        flash('✅ Подтверждено! Войдите в систему.', 'success')
+        return redirect(url_for('auth.login'))
     
     return render_template('verify_email.html', email=email)
 
 @auth_bp.route('/resend-code', methods=['POST'])
 def resend_code():
     if 'pending_registration' not in session:
-        flash('Сначала заполните форму регистрации', 'error')
+        flash('Сначала зарегистрируйтесь', 'error')
         return redirect(url_for('auth.register'))
     
     email = session['pending_registration']['email']
@@ -183,30 +157,16 @@ def resend_code():
     code = generate_code()
     
     try:
-        old = VerificationCode.query.filter_by(email=email, is_used=False).first()
-        if old:
-            db.session.delete(old)
-        
-        verification = VerificationCode(
-            email=email,
-            code=code,
-            username=username,
-            password_hash=session['pending_registration']['password_hash'],
-            role=session['pending_registration']['role'],
-            expires_at=datetime.utcnow() + timedelta(minutes=10)
+        save_verification_code(
+            email, code, username,
+            session['pending_registration']['password_hash'],
+            session['pending_registration']['role']
         )
-        db.session.add(verification)
-        db.session.commit()
-        
-        send_verification_email(email, code, username)
-        
-    except IntegrityError:
-        db.session.rollback()
-        flash('Ошибка при отправке кода.', 'error')
-        return redirect(url_for('auth.register'))
+        flash(f'Новый код: {code} | Проверьте окно кодов ↗', 'success')
+    except:
+        flash('Ошибка отправки кода', 'error')
     
-    flash('Новый код отправлен! Проверьте Почту Cafe.', 'success')
-    return redirect(url_for('auth.verify_email'))
+    return redirect(url_for('auth.verify_email', email=email))
 
 @auth_bp.route('/logout')
 @login_required
