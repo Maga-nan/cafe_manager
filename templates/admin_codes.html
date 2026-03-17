@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔑 Коды подтверждения</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .popup-window {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            max-width: 400px;
+            margin: 0 auto;
+            overflow: hidden;
+            color: #333;
+        }
+        .popup-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .popup-header h2 { font-size: 1.2rem; }
+        .popup-header .status {
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .popup-body {
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .code-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .code-item .email {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+        .code-item .username {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .code-item .code {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .code-item .code:hover {
+            transform: scale(1.05);
+        }
+        .code-item .expires {
+            font-size: 0.8rem;
+            color: #999;
+            text-align: right;
+        }
+        .code-item .expires.warning {
+            color: #f59e0b;
+        }
+        .code-item .expires.danger {
+            color: #ef4444;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .refresh-info {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+            padding: 10px;
+            border-top: 1px solid #eee;
+        }
+        .copy-hint {
+            font-size: 0.75rem;
+            color: #667eea;
+            text-align: center;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="popup-window">
+        <div class="popup-header">
+            <h2>🔑 Коды подтверждения</h2>
+            <span class="status" id="status">Обновление...</span>
+        </div>
+        
+        <div class="popup-body" id="codesList">
+            {% if codes %}
+                {% for code in codes %}
+                <div class="code-item" data-email="{{ code.email }}">
+                    <div class="email">{{ code.email }}</div>
+                    <div class="username">👤 {{ code.username }}</div>
+                    <div class="code" onclick="copyCode('{{ code.code }}')" title="Нажми чтобы скопировать">
+                        {{ code.code }}
+                    </div>
+                    <div class="copy-hint">📋 Нажми чтобы скопировать</div>
+                    <div class="expires" id="expires-{{ code.id }}">
+                        ⏰ <span class="timer" data-expires="{{ code.expires_at.isoformat() }}">--:--</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <p>Нет ожидающих подтверждений</p>
+                    <p style="font-size: 0.85rem; margin-top: 10px;">
+                        Новые коды появятся здесь автоматически
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="refresh-info">
+            🔄 Автообновление каждые 5 секунд
+        </div>
+    </div>
+
+    <script>
+    // Копирование кода в буфер
+    function copyCode(code) {
+        navigator.clipboard.writeText(code).then(() => {
+            alert('Код скопирован: ' + code);
+        });
+    }
+    
+    // Форматирование времени
+    function formatTime(seconds) {
+        if (seconds < 0) return 'Истёк';
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+    
+    // Обновление таймеров
+    function updateTimers() {
+        document.querySelectorAll('.timer').forEach(el => {
+            const expires = new Date(el.dataset.expires);
+            const now = new Date();
+            const seconds = Math.floor((expires - now) / 1000);
+            el.textContent = formatTime(seconds);
+            
+            // Цветовая индикация
+            el.className = 'timer';
+            if (seconds < 60) el.classList.add('danger');
+            else if (seconds < 300) el.classList.add('warning');
+        });
+    }
+    
+    // Загрузка новых кодов через API
+    async function fetchCodes() {
+        try {
+            const response = await fetch('/admin/codes/api');
+            const newCodes = await response.json();
+            
+            const list = document.getElementById('codesList');
+            const status = document.getElementById('status');
+            
+            if (newCodes.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>Нет ожидающих подтверждений</p>
+                    </div>
+                `;
+                status.textContent = 'Пусто';
+                return;
+            }
+            
+            // Обновляем список
+            let html = '';
+            newCodes.forEach(code => {
+                const expires = new Date(code.expires_at || code.created_at + 600000);
+                html += `
+                    <div class="code-item" data-email="${code.email}">
+                        <div class="email">${code.email}</div>
+                        <div class="username">👤 ${code.username}</div>
+                        <div class="code" onclick="copyCode('${code.code}')">${code.code}</div>
+                        <div class="copy-hint">📋 Нажми чтобы скопировать</div>
+                        <div class="expires">
+                            ⏰ <span class="timer" data-expires="${expires.toISOString()}">--:--</span>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+            status.textContent = `Активно: ${newCodes.length}`;
+            updateTimers();
+            
+        } catch (e) {
+            console.error('Ошибка загрузки:', e);
+            document.getElementById('status').textContent = 'Ошибка';
+        }
+    }
+    
+    // Инициализация
+    updateTimers();
+    setInterval(updateTimers, 1000);  // Обновляем таймеры каждую секунду
+    setInterval(fetchCodes, 5000);     // Проверяем новые коды каждые 5 секунд
+    
+    // Первый запрос сразу
+    fetchCodes();
+    </script>
+</body>
+</html>
