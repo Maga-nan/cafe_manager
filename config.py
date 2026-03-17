@@ -9,9 +9,6 @@ class Config:
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
-    MAIL_USERNAME = 'your-email@gmail.com'  # 🔥 ТВОЙ Gmail
-    MAIL_PASSWORD = 'your-app-password'      # 🔥 Пароль приложения (НЕ обычный пароль!)
-    MAIL_DEFAULT_SENDER = 'your-email@gmail.com'
-    
-    # Для отладки (письма в консоль)
-    # MAIL_SUPPRESS_SEND = False
+    MAIL_USERNAME = 'tvoypochta@gmail.com'  # 🔥 ЗАМЕНИ на СВОЙ Gmail
+    MAIL_PASSWORD = 'abcdefghijklmnop'      # 🔥 ЗАМЕНИ на пароль приложения
+    MAIL_DEFAULT_SENDER = 'tvoypochta@gmail.com'  # 🔥 Тот же email что и MAIL_USERNAME
