@@ -1,4 +1,4 @@
-from models import db, Email
+from models import db, VerificationCode, Email
 from datetime import datetime
 import random
 import string
@@ -7,63 +7,42 @@ def generate_code(length=6):
     """Генерирует случайный код из цифр"""
     return ''.join(random.choices(string.digits, k=length))
 
-def send_verification_email(email, code, username):
+def save_verification_code(email, code, username, password_hash, role):
     """
-    Сохраняет код подтверждения в базу данных (внутренняя почта)
-    НЕ отправляет на реальный email
+    Сохраняет код подтверждения в базу данных.
+    Код будет виден в окне /admin/codes
     """
     try:
-        # Создаём HTML версию письма с кодом
-        html_body = f'''
-        <html>
-        <body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f6fa;">
-            <div style="max-width: 600px; margin: 0 auto; background: white; 
-                        padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <h2 style="color: #667eea; text-align: center;">☕ Cafe Manager</h2>
-                <p>Привет, <strong>{username}</strong>!</p>
-                <p>Спасибо за регистрацию в системе Cafe Manager.</p>
-                <p>Ваш код подтверждения:</p>
-                
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                            color: white; 
-                            padding: 20px; 
-                            text-align: center; 
-                            font-size: 32px; 
-                            font-weight: bold;
-                            letter-spacing: 5px; 
-                            border-radius: 8px; 
-                            margin: 20px 0;">
-                    {code}
-                </div>
-                
-                <p>Код действителен в течение <strong>10 минут</strong>.</p>
-                <p style="color: #666; font-size: 14px;">
-                    💡 Откройте <strong>Почту Cafe</strong> (порт 5001), 
-                    чтобы посмотреть этот код.
-                </p>
-                <hr style="border: none; border-top: 1px solid #dfe6e9; margin: 20px 0;">
-                <p style="color: #999; font-size: 12px; text-align: center;">
-                    © 2024 Cafe Manager. Все права защищены.
-                </p>
-            </div>
-        </body>
-        </html>
-        '''
+        # Удаляем старые неиспользованные коды для этого email
+        old_codes = VerificationCode.query.filter_by(email=email, is_used=False).all()
+        for old in old_codes:
+            db.session.delete(old)
         
-        # Сохраняем письмо в базу данных (внутренняя почта)
+        # Сохраняем новый код
+        verification = VerificationCode(
+            email=email,
+            code=code,
+            username=username,
+            password_hash=password_hash,
+            role=role,
+            expires_at=datetime.utcnow() + timedelta(minutes=10)
+        )
+        db.session.add(verification)
+        
+        # Также сохраняем как "письмо" для отображения в интерфейсе
         email_record = Email(
             recipient_email=email,
-            subject='☕ Подтверждение регистрации - Cafe Manager',
-            body=html_body,
+            subject='☕ Код подтверждения',
+            body=f'<div style="font-size:32px;font-weight:bold;text-align:center">{code}</div>',
             sent_at=datetime.utcnow()
         )
         db.session.add(email_record)
-        db.session.commit()
         
-        print(f"✅ Код {code} сохранён в почте для {email}")
+        db.session.commit()
+        print(f"✅ Код {code} сохранён для {email}")
         return True
         
     except Exception as e:
-        print(f"❌ Ошибка сохранения email: {e}")
+        print(f"❌ Ошибка: {e}")
         db.session.rollback()
         return False
