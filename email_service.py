@@ -1,25 +1,20 @@
-from flask_mail import Mail, Message
+from models import db, Email
+from datetime import datetime
 import random
 import string
-
-mail = Mail()
-
-def init_mail(app):
-    mail.init_app(app)
 
 def generate_code(length=6):
     """Генерирует случайный код из цифр"""
     return ''.join(random.choices(string.digits, k=length))
 
 def send_verification_email(email, code, username):
-    """Отправляет письмо с кодом подтверждения на РЕАЛЬНУЮ почту"""
+    """
+    Сохраняет код подтверждения в базу данных (внутренняя почта)
+    НЕ отправляет на реальный email
+    """
     try:
-        msg = Message(
-            subject='☕ Подтверждение регистрации - Cafe Manager',
-            sender='Cafe Manager <noreply@cafemanager.com>',
-            recipients=[email]
-        )
-        msg.html = f'''
+        # Создаём HTML версию письма с кодом
+        html_body = f'''
         <html>
         <body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f6fa;">
             <div style="max-width: 600px; margin: 0 auto; background: white; 
@@ -43,7 +38,8 @@ def send_verification_email(email, code, username):
                 
                 <p>Код действителен в течение <strong>10 минут</strong>.</p>
                 <p style="color: #666; font-size: 14px;">
-                    Если вы не регистрировались, просто проигнорируйте это письмо.
+                    💡 Откройте <strong>Почту Cafe</strong> (порт 5001), 
+                    чтобы посмотреть этот код.
                 </p>
                 <hr style="border: none; border-top: 1px solid #dfe6e9; margin: 20px 0;">
                 <p style="color: #999; font-size: 12px; text-align: center;">
@@ -53,22 +49,21 @@ def send_verification_email(email, code, username):
         </body>
         </html>
         '''
-        msg.body = f'''
-Cafe Manager - Подтверждение регистрации
-
-Привет, {username}!
-
-Ваш код подтверждения: {code}
-
-Код действителен в течение 10 минут.
-
-Если вы не регистрировались, просто проигнорируйте это письмо.
-        '''
         
-        mail.send(msg)
-        print(f"✅ Письмо с кодом {code} отправлено на {email}")
+        # Сохраняем письмо в базу данных (внутренняя почта)
+        email_record = Email(
+            recipient_email=email,
+            subject='☕ Подтверждение регистрации - Cafe Manager',
+            body=html_body,
+            sent_at=datetime.utcnow()
+        )
+        db.session.add(email_record)
+        db.session.commit()
+        
+        print(f"✅ Код {code} сохранён в почте для {email}")
         return True
         
     except Exception as e:
-        print(f"❌ Ошибка отправки email: {e}")
+        print(f"❌ Ошибка сохранения email: {e}")
+        db.session.rollback()
         return False
