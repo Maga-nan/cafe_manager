@@ -1,18 +1,6 @@
 from flask_mail import Mail, Message
 import random
 import string
-from datetime import datetime
-from models import db
-
-# Создаём модель Email, если её нет
-class Email(db.Model):
-    __tablename__ = 'emails'
-    id = db.Column(db.Integer, primary_key=True)
-    recipient_email = db.Column(db.String(120), nullable=False)
-    subject = db.Column(db.String(200), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
-    is_read = db.Column(db.Boolean, default=False)
 
 mail = Mail()
 
@@ -24,46 +12,63 @@ def generate_code(length=6):
     return ''.join(random.choices(string.digits, k=length))
 
 def send_verification_email(email, code, username):
-    """Отправляет письмо с кодом подтверждения (сохраняет в базу)"""
+    """Отправляет письмо с кодом подтверждения на РЕАЛЬНУЮ почту"""
     try:
-        # Создаём HTML версию письма
-        html_body = f'''
+        msg = Message(
+            subject='☕ Подтверждение регистрации - Cafe Manager',
+            sender='Cafe Manager <noreply@cafemanager.com>',
+            recipients=[email]
+        )
+        msg.html = f'''
         <html>
-        <body style="font-family: Arial, sans-serif; padding: 20px;">
-            <h2 style="color: #2d3436;">☕ Cafe Manager</h2>
-            <p>Привет, <strong>{username}</strong>!</p>
-            <p>Спасибо за регистрацию в системе Cafe Manager.</p>
-            <p>Ваш код подтверждения:</p>
-            <div class="code-box" style="background: #0984e3; color: white; padding: 20px; 
-                        text-align: center; font-size: 24px; 
-                        letter-spacing: 5px; border-radius: 5px; 
-                        display: inline-block;">
-                <strong>{code}</strong>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f6fa;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; 
+                        padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h2 style="color: #667eea; text-align: center;">☕ Cafe Manager</h2>
+                <p>Привет, <strong>{username}</strong>!</p>
+                <p>Спасибо за регистрацию в системе Cafe Manager.</p>
+                <p>Ваш код подтверждения:</p>
+                
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                            color: white; 
+                            padding: 20px; 
+                            text-align: center; 
+                            font-size: 32px; 
+                            font-weight: bold;
+                            letter-spacing: 5px; 
+                            border-radius: 8px; 
+                            margin: 20px 0;">
+                    {code}
+                </div>
+                
+                <p>Код действителен в течение <strong>10 минут</strong>.</p>
+                <p style="color: #666; font-size: 14px;">
+                    Если вы не регистрировались, просто проигнорируйте это письмо.
+                </p>
+                <hr style="border: none; border-top: 1px solid #dfe6e9; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px; text-align: center;">
+                    © 2024 Cafe Manager. Все права защищены.
+                </p>
             </div>
-            <p>Код действителен в течение <strong>10 минут</strong>.</p>
-            <p>Если вы не регистрировались, просто проигнорируйте это письмо.</p>
-            <hr style="border: none; border-top: 1px solid #dfe6e9; margin: 20px 0;">
-            <p style="color: #636e72; font-size: 12px;">
-                © 2024 Cafe Manager. Все права защищены.
-            </p>
         </body>
         </html>
         '''
+        msg.body = f'''
+Cafe Manager - Подтверждение регистрации
+
+Привет, {username}!
+
+Ваш код подтверждения: {code}
+
+Код действителен в течение 10 минут.
+
+Если вы не регистрировались, просто проигнорируйте это письмо.
+        '''
         
-        # Сохраняем письмо в базу данных
-        email_record = Email(
-            recipient_email=email,
-            subject='☕ Подтверждение регистрации - Cafe Manager',
-            body=html_body,
-            sent_at=datetime.utcnow()
-        )
-        db.session.add(email_record)
-        db.session.commit()
-        
-        print(f"✅ Письмо с кодом {code} сохранено в почту для {email}")
+        mail.send(msg)
+        print(f"✅ Письмо с кодом {code} отправлено на {email}")
         return True
         
     except Exception as e:
-        print(f"❌ Ошибка сохранения email: {e}")
-        db.session.rollback()
+        print(f"❌ Ошибка отправки email: {e}")
         return False
