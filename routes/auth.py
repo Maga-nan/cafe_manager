@@ -41,7 +41,6 @@ def register():
         confirm_password = request.form.get('confirm_password', '')
         role = request.form.get('role', 'cashier')
         
-        # Проверки
         if not username or not email or not password:
             flash('Все поля обязательны', 'error')
             return redirect(url_for('auth.register'))
@@ -62,11 +61,9 @@ def register():
             flash('Этот email уже зарегистрирован', 'error')
             return redirect(url_for('auth.register'))
         
-        # Генерируем код
         code = generate_code()
         password_hash = generate_password_hash(password)
         
-        # Сохраняем в сессию
         session['pending_registration'] = {
             'username': username,
             'email': email,
@@ -75,7 +72,6 @@ def register():
         }
         
         try:
-            # Сохраняем код в базу (будет виден в /admin/codes)
             save_verification_code(email, code, username, password_hash, role)
         except IntegrityError:
             db.session.rollback()
@@ -116,13 +112,11 @@ def verify_email(email=None):
             return redirect(url_for('auth.register'))
         
         try:
-            # Финальная проверка
             if User.query.filter_by(email=email).first():
                 flash('Email уже зарегистрирован', 'error')
                 session.pop('pending_registration', None)
                 return redirect(url_for('auth.register'))
             
-            # Создаём пользователя
             user = User(
                 username=session['pending_registration']['username'],
                 email=email,
