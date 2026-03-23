@@ -8,17 +8,12 @@ def generate_code(length=6):
     return ''.join(random.choices(string.digits, k=length))
 
 def save_verification_code(email, code, username, password_hash, role):
-    """
-    Сохраняет код подтверждения в базу данных.
-    Код будет виден в окне /admin/codes
-    """
+    """Сохраняет код подтверждения в базу данных"""
     try:
-        # Удаляем старые неиспользованные коды для этого email
         old_codes = VerificationCode.query.filter_by(email=email, is_used=False).all()
         for old in old_codes:
             db.session.delete(old)
         
-        # Сохраняем новый код
         verification = VerificationCode(
             email=email,
             code=code,
@@ -29,7 +24,6 @@ def save_verification_code(email, code, username, password_hash, role):
         )
         db.session.add(verification)
         
-        # Также сохраняем как "письмо" для отображения в интерфейсе
         email_record = Email(
             recipient_email=email,
             subject='☕ Код подтверждения',
