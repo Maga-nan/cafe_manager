@@ -6,7 +6,6 @@
     <title>{% block title %}Кафе Менеджер{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        /* 🔥 Стили для кнопки "Коды" */
         .btn-codes {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white !important;
@@ -18,16 +17,34 @@
             align-items: center;
             gap: 5px;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
         }
         .btn-codes:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
         }
-        .btn-codes:active {
-            transform: translateY(0);
+        .btn-client {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
-        /* Анимация для новых писем */
+        .btn-client:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(17, 153, 142, 0.5);
+        }
+        .btn-staff {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+        }
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
@@ -42,38 +59,32 @@
         <div class="nav-brand">☕ Кафе Менеджер</div>
         <div class="nav-links">
             {% if current_user.is_authenticated %}
-                <!-- Основные ссылки -->
-                <a href="{{ url_for('index_dashboard') }}">🏠 Главная</a>
-                <a href="{{ url_for('orders.orders_list') }}">📋 Заказы</a>
-                <a href="{{ url_for('menu.menu_list') }}">🍽️ Меню</a>
-                
-                <!-- 🔥 КНОПКА: Окно кодов подтверждения -->
-                <a href="{{ url_for('admin.admin_codes') }}" 
-                   target="_blank" 
-                   class="btn-codes"
-                   title="Открыть окно кодов в новой вкладке">
-                    🔑 Коды
-                </a>
-                
-                <!-- Информация о пользователе -->
-                <span class="user-info">
-                    👤 {{ current_user.username }} 
-                    <small style="color: #999;">({{ current_user.role }})</small>
-                </span>
-                
-                <!-- Кнопка выхода -->
-                <a href="{{ url_for('auth.logout') }}" class="btn-logout">🚪 Выйти</a>
-                
+                {% if current_user.role == 'client' %}
+                    <!-- Меню для КЛИЕНТА -->
+                    <a href="{{ url_for('client.client_home') }}">🏠 Меню</a>
+                    <a href="{{ url_for('client.client_orders') }}">📦 Мои заказы</a>
+                    <span class="user-info">👤 {{ current_user.username }} (Клиент)</span>
+                    <a href="{{ url_for('client.client_logout') }}" class="btn-logout">🚪 Выйти</a>
+                {% else %}
+                    <!-- Меню для СОТРУДНИКА -->
+                    <a href="{{ url_for('index_dashboard') }}">🏠 Главная</a>
+                    <a href="{{ url_for('orders.orders_list') }}">📋 Заказы</a>
+                    <a href="{{ url_for('menu.menu_list') }}">🍽️ Меню</a>
+                    <a href="{{ url_for('admin.admin_codes') }}" target="_blank" class="btn-codes">🔑 Коды</a>
+                    <span class="user-info">👤 {{ current_user.username }} ({{ current_user.role }})</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn-logout">🚪 Выйти</a>
+                {% endif %}
             {% else %}
-                <!-- Ссылки для неавторизованных -->
-                <a href="{{ url_for('auth.login') }}">🔐 Войти</a>
-                <a href="{{ url_for('auth.register') }}">📝 Регистрация</a>
+                <!-- Меню для ГОСТЯ -->
+                <a href="{{ url_for('client.client_home') }}" class="btn-client">👤 Меню</a>
+                <a href="{{ url_for('client.client_login') }}" class="btn-client">🔐 Вход для клиента</a>
+                <a href="{{ url_for('client.client_register') }}" class="btn-client">📝 Регистрация</a>
+                <a href="{{ url_for('auth.login') }}" class="btn-staff">👨‍ Сотрудникам</a>
             {% endif %}
         </div>
     </nav>
     
     <main class="container">
-        <!-- Сообщения (flash messages) -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -85,38 +96,27 @@
             {% endif %}
         {% endwith %}
         
-        <!-- Основной контент страницы -->
         {% block content %}{% endblock %}
     </main>
     
-    <!-- 🔥 ФУТЕР УДАЛЁН (по запросу) -->
-    
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
-    <!-- 🔥 Скрипт для уведомления о новых кодах -->
+    {% if current_user.is_authenticated and current_user.role != 'client' %}
     <script>
-    // Проверка новых кодов (для авторизованных пользователей)
-    {% if current_user.is_authenticated %}
     async function checkNewCodes() {
         try {
             const response = await fetch('/admin/codes/api');
             const codes = await response.json();
             const btn = document.querySelector('.btn-codes');
-            
             if (codes.length > 0 && btn) {
                 btn.classList.add('new');
-                btn.title = `🔔 ${codes.length} новых кодов ожидания`;
+                btn.title = `🔔 ${codes.length} новых кодов`;
             }
-        } catch (e) {
-            console.log('Не удалось проверить коды:', e);
-        }
+        } catch (e) { console.log(e); }
     }
-    
-    // Проверяем каждые 10 секунд
     setInterval(checkNewCodes, 10000);
-    // Первая проверка сразу
     checkNewCodes();
-    {% endif %}
     </script>
+    {% endif %}
 </body>
 </html>
