@@ -5,7 +5,8 @@ from models import db, User
 from routes.auth import auth_bp
 from routes.orders import orders_bp
 from routes.menu import menu_bp
-from routes.admin import admin_bp  # ← Новый blueprint
+from routes.admin import admin_bp
+from routes.client import client_bp  # ← НОВОЕ!
 
 def create_app():
     app = Flask(__name__)
@@ -25,19 +26,24 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(orders_bp, url_prefix='/orders')
     app.register_blueprint(menu_bp, url_prefix='/menu')
-    app.register_blueprint(admin_bp)  # ← Админ-маршруты
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(client_bp)  # ← НОВОЕ!
     
     # Главный маршрут
     @app.route('/')
     def index():
         if current_user.is_authenticated:
+            if current_user.role == 'client':
+                return redirect(url_for('client.client_home'))
             return redirect(url_for('index_dashboard'))
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('client.client_home'))  # ← Клиентская страница по умолчанию
     
-    # Dashboard
+    # Dashboard для сотрудников
     @app.route('/dashboard')
     @login_required
     def index_dashboard():
+        if current_user.role == 'client':
+            return redirect(url_for('client.client_home'))
         return render_template('dashboard.html')
     
     # Создание БД и админа
