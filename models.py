@@ -11,8 +11,9 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), default='cashier')
+    role = db.Column(db.String(20), default='cashier')  # admin, manager, cashier, client
     is_verified = db.Column(db.Boolean, default=False)
+    phone = db.Column(db.String(20), nullable=True)  # Для клиентов
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def set_password(self, password):
@@ -28,13 +29,17 @@ class MenuItem(db.Model):
     price = db.Column(db.Float, nullable=False)
     category = db.Column(db.String(50), default='Основное')
     is_available = db.Column(db.Boolean, default=True)
+    image_url = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Order(db.Model):
     __tablename__ = 'orders'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    status = db.Column(db.String(20), default='new')
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # nullable для гостей
+    client_name = db.Column(db.String(100), nullable=True)  # Для гостей
+    client_phone = db.Column(db.String(20), nullable=True)  # Для гостей
+    table_number = db.Column(db.Integer, nullable=True)  # Номер столика
+    status = db.Column(db.String(20), default='new')  # new, cooking, ready, completed, cancelled
     total_amount = db.Column(db.Float, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -64,3 +69,12 @@ class VerificationCode(db.Model):
     
     def is_expired(self):
         return datetime.utcnow() > self.expires_at
+
+class Email(db.Model):
+    __tablename__ = 'emails'
+    id = db.Column(db.Integer, primary_key=True)
+    recipient_email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    sent_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
