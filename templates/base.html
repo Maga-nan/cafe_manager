@@ -16,7 +16,6 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            transition: transform 0.2s, box-shadow 0.2s;
         }
         .btn-codes:hover {
             transform: translateY(-2px);
@@ -29,13 +28,6 @@
             border-radius: 8px;
             font-weight: 600;
             text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .btn-client:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(17, 153, 142, 0.5);
         }
         .btn-staff {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -45,13 +37,17 @@
             font-weight: 600;
             text-decoration: none;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        .role-badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-left: 5px;
         }
-        .btn-codes.new {
-            animation: pulse 2s infinite;
-        }
+        .role-admin { background: #dc3545; color: white; }
+        .role-manager { background: #fd7e14; color: white; }
+        .role-cashier { background: #0d6efd; color: white; }
+        .role-client { background: #198754; color: white; }
     </style>
 </head>
 <body>
@@ -60,24 +56,32 @@
         <div class="nav-links">
             {% if current_user.is_authenticated %}
                 {% if current_user.role == 'client' %}
-                    <!-- Меню для КЛИЕНТА -->
                     <a href="{{ url_for('client.client_home') }}">🏠 Меню</a>
-                    <a href="{{ url_for('client.client_orders') }}">📦 Мои заказы</a>
-                    <span class="user-info">👤 {{ current_user.username }} (Клиент)</span>
+                    <a href="{{ url_for('client.client_orders') }}">📦 Заказы</a>
+                    <span class="user-info">
+                        👤 {{ current_user.username }}
+                        <span class="role-badge role-{{ current_user.role }}">Клиент</span>
+                    </span>
                     <a href="{{ url_for('client.client_logout') }}" class="btn-logout">🚪 Выйти</a>
                 {% else %}
-                    <!-- Меню для СОТРУДНИКА -->
                     <a href="{{ url_for('index_dashboard') }}">🏠 Главная</a>
                     <a href="{{ url_for('orders.orders_list') }}">📋 Заказы</a>
                     <a href="{{ url_for('menu.menu_list') }}">🍽️ Меню</a>
                     <a href="{{ url_for('admin.admin_codes') }}" target="_blank" class="btn-codes">🔑 Коды</a>
-                    <span class="user-info">👤 {{ current_user.username }} ({{ current_user.role }})</span>
+                    <span class="user-info">
+                        👤 {{ current_user.username }}
+                        <span class="role-badge role-{{ current_user.role }}">
+                            {% if current_user.role == 'admin' %}Админ
+                            {% elif current_user.role == 'manager' %}Менеджер
+                            {% elif current_user.role == 'cashier' %}Кассир
+                            {% else %}{{ current_user.role }}{% endif %}
+                        </span>
+                    </span>
                     <a href="{{ url_for('auth.logout') }}" class="btn-logout">🚪 Выйти</a>
                 {% endif %}
             {% else %}
-                <!-- Меню для ГОСТЯ -->
                 <a href="{{ url_for('client.client_home') }}" class="btn-client">👤 Меню</a>
-                <a href="{{ url_for('client.client_login') }}" class="btn-client">🔐 Вход для клиента</a>
+                <a href="{{ url_for('client.client_login') }}" class="btn-client">🔐 Вход</a>
                 <a href="{{ url_for('client.client_register') }}" class="btn-client">📝 Регистрация</a>
                 <a href="{{ url_for('auth.login') }}" class="btn-staff">👨‍ Сотрудникам</a>
             {% endif %}
@@ -100,23 +104,5 @@
     </main>
     
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
-    {% if current_user.is_authenticated and current_user.role != 'client' %}
-    <script>
-    async function checkNewCodes() {
-        try {
-            const response = await fetch('/admin/codes/api');
-            const codes = await response.json();
-            const btn = document.querySelector('.btn-codes');
-            if (codes.length > 0 && btn) {
-                btn.classList.add('new');
-                btn.title = `🔔 ${codes.length} новых кодов`;
-            }
-        } catch (e) { console.log(e); }
-    }
-    setInterval(checkNewCodes, 10000);
-    checkNewCodes();
-    </script>
-    {% endif %}
 </body>
 </html>
