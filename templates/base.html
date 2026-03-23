@@ -5,54 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Кафе Менеджер{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .btn-codes {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white !important;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .btn-codes:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
-        }
-        .btn-client {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white !important;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .btn-staff {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white !important;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .role-badge {
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-left: 5px;
-        }
-        .role-admin { background: #dc3545; color: white; }
-        .role-manager { background: #fd7e14; color: white; }
-        .role-cashier { background: #0d6efd; color: white; }
-        .role-client { background: #198754; color: white; }
-    </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">☕ Кафе Менеджер</div>
+        <div class="nav-brand">Кафе Менеджер</div>
         <div class="nav-links">
             {% if current_user.is_authenticated %}
                 {% if current_user.role == 'client' %}
@@ -88,13 +44,13 @@
         </div>
     </nav>
     
-    <main class="container">
+    <main class="container fade-in">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="alert alert-{{ category }}">
-                        {% if category == 'success' %}✅{% elif category == 'error' %}❌{% elif category == 'info' %}ℹ️{% endif %}
-                        {{ message }}
+                        <span>{% if category == 'success' %}✅{% elif category == 'error' %}❌{% elif category == 'info' %}ℹ️{% endif %}</span>
+                        <span>{{ message }}</span>
                     </div>
                 {% endfor %}
             {% endif %}
