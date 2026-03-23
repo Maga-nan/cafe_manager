@@ -7,14 +7,12 @@ from sqlalchemy.exc import IntegrityError
 
 client_bp = Blueprint('client', __name__)
 
-# Главная страница клиента (меню)
 @client_bp.route('/client')
 def client_home():
     menu_items = MenuItem.query.filter_by(is_available=True).all()
     categories = db.session.query(MenuItem.category).distinct().all()
     return render_template('client_home.html', menu_items=menu_items, categories=categories)
 
-# Регистрация клиента
 @client_bp.route('/client/register', methods=['GET', 'POST'])
 def client_register():
     if current_user.is_authenticated:
@@ -39,7 +37,6 @@ def client_register():
             flash('Пароль должен быть не менее 4 символов', 'error')
             return redirect(url_for('client.client_register'))
         
-        # Проверяем существование
         if User.query.filter_by(username=username).first():
             flash('Имя пользователя занято', 'error')
             return redirect(url_for('client.client_register'))
@@ -49,14 +46,13 @@ def client_register():
             return redirect(url_for('client.client_register'))
         
         try:
-            # Создаём клиента (без подтверждения email)
             client = User(
                 username=username,
                 email=email or f'{username}@client.local',
                 password_hash=generate_password_hash(password),
                 role='client',
                 phone=phone,
-                is_verified=True  # Клиенты не требуют подтверждения
+                is_verified=True
             )
             db.session.add(client)
             db.session.commit()
@@ -70,7 +66,6 @@ def client_register():
     
     return render_template('client_register.html')
 
-# Вход клиента
 @client_bp.route('/client/login', methods=['GET', 'POST'])
 def client_login():
     if current_user.is_authenticated:
@@ -91,7 +86,6 @@ def client_login():
     
     return render_template('client_login.html')
 
-# Оформление заказа
 @client_bp.route('/client/order', methods=['GET', 'POST'])
 def client_order():
     if request.method == 'POST':
@@ -106,7 +100,6 @@ def client_order():
             import json
             items = json.loads(cart)
             
-            # Создаём заказ
             order = Order(
                 user_id=current_user.id if current_user.is_authenticated else None,
                 client_name=current_user.username if current_user.is_authenticated else request.form.get('client_name', 'Гость'),
@@ -116,7 +109,7 @@ def client_order():
                 total_amount=0
             )
             db.session.add(order)
-            db.session.flush()  # Получаем ID заказа
+            db.session.flush()
             
             total = 0
             for item in items:
@@ -134,16 +127,15 @@ def client_order():
             order.total_amount = total
             db.session.commit()
             
-            flash(f'✅ Заказ #{order.id} оформлен! Ожидайте приготовления.', 'success')
+            flash(f'✅ Заказ #{order.id} оформлен!', 'success')
             return redirect(url_for('client.client_orders'))
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Ошибка оформления заказа: {e}', 'error')
+            flash(f'Ошибка: {e}', 'error')
     
     return redirect(url_for('client.client_home'))
 
-# Мои заказы
 @client_bp.route('/client/orders')
 @login_required
 def client_orders():
@@ -154,7 +146,6 @@ def client_orders():
     orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
     return render_template('client_orders.html', orders=orders)
 
-# Детали заказа
 @client_bp.route('/client/order/<int:order_id>')
 @login_required
 def client_order_detail(order_id):
@@ -166,7 +157,6 @@ def client_order_detail(order_id):
     
     return render_template('client_order_detail.html', order=order)
 
-# Выход клиента
 @client_bp.route('/client/logout')
 @login_required
 def client_logout():
