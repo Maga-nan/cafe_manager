@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Регистрация клиента{% endblock %}
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>📝 Регистрация клиента</h2>
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label>Имя пользователя *</label>
+                <input type="text" name="username" required placeholder="Придумайте имя">
+            </div>
+            <div class="form-group">
+                <label>Email (необязательно)</label>
+                <input type="email" name="email" placeholder="example@mail.com">
+            </div>
+            <div class="form-group">
+                <label>Телефон (необязательно)</label>
+                <input type="tel" name="phone" placeholder="+7 (999) 000-00-00">
+            </div>
+            <div class="form-group">
+                <label>Пароль *</label>
+                <input type="password" name="password" required placeholder="Минимум 4 символа">
+            </div>
+            <div class="form-group">
+                <label>Подтверждение пароля *</label>
+                <input type="password" name="confirm_password" required placeholder="Повторите пароль">
+            </div>
+            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">Зарегистрироваться</button>
+        </form>
+        <p class="auth-link">Уже есть аккаунт? <a href="{{ url_for('client.client_login') }}">Войти</a></p>
+    </div>
+</div>
+{% endblock %}
