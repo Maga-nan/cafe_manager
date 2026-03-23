@@ -7,13 +7,13 @@
         <form method="POST" class="auth-form">
             <div class="form-group">
                 <label>Имя пользователя</label>
-                <input type="text" name="username" required placeholder="Ваше имя">
+                <input type="text" name="username" required placeholder="Введите имя" autocomplete="username">
             </div>
             <div class="form-group">
                 <label>Пароль</label>
-                <input type="password" name="password" required placeholder="Ваш пароль">
+                <input type="password" name="password" required placeholder="Введите пароль" autocomplete="current-password">
             </div>
-            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">Войти</button>
+            <button type="submit" class="btn btn-primary">Войти</button>
         </form>
         <p class="auth-link">Нет аккаунта? <a href="{{ url_for('client.client_register') }}">Зарегистрироваться</a></p>
         <p class="auth-link"><a href="{{ url_for('client.client_home') }}">← Меню без регистрации</a></p>
