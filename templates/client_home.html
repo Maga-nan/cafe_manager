@@ -2,48 +2,55 @@
 {% block title %}Меню - Кафе Менеджер{% endblock %}
 {% block content %}
 <div class="client-home">
-    <h1>🍽️ Наше Меню</h1>
-    
-    <!-- Фильтр по категориям -->
-    <div class="category-filter" style="margin-bottom: 30px;">
-        <button class="filter-btn active" data-category="all">Все</button>
-        {% for cat in categories %}
-        <button class="filter-btn" data-category="{{ cat[0] }}">{{ cat[0] }}</button>
-        {% endfor %}
-    </div>
-    
-    <!-- Сетка меню -->
-    <div class="menu-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
-        {% for item in menu_items %}
-        <div class="menu-item" data-category="{{ item.category }}" style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h3 style="margin: 0 0 10px 0; color: #333;">{{ item.name }}</h3>
-            <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">{{ item.description or 'Без описания' }}</p>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 1.3rem; font-weight: 700; color: #667eea;">{{ item.price }} ₽</span>
-                <button class="add-to-cart" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price }}" 
-                        style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    🛒 В корзину
-                </button>
+    <div class="card mb-20">
+        <div class="card-header">
+            🍽️ Наше Меню
+        </div>
+        <div class="card-body">
+            <!-- Фильтр по категориям -->
+            <div class="category-filter mb-20" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-secondary filter-btn active" data-category="all">Все</button>
+                {% for cat in categories %}
+                <button class="btn btn-secondary filter-btn" data-category="{{ cat[0] }}">{{ cat[0] }}</button>
+                {% endfor %}
+            </div>
+            
+            <!-- Сетка меню -->
+            <div class="menu-grid">
+                {% for item in menu_items %}
+                <div class="menu-item" data-category="{{ item.category }}">
+                    <h3>{{ item.name }}</h3>
+                    <p style="color: #666; margin-bottom: 15px; font-size: 0.95rem;">{{ item.description or 'Без описания' }}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="price">{{ item.price }} ₽</span>
+                        <button class="btn btn-success btn-sm add-to-cart" 
+                                data-id="{{ item.id }}" 
+                                data-name="{{ item.name }}" 
+                                data-price="{{ item.price }}">
+                            🛒 В корзину
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
-        {% endfor %}
     </div>
     
     <!-- Корзина -->
-    <div id="cart-panel" style="position: fixed; bottom: 20px; right: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); display: none; min-width: 300px;">
-        <h3 style="margin: 0 0 15px 0;">🛒 Корзина</h3>
-        <div id="cart-items"></div>
-        <div style="border-top: 2px solid #eee; margin-top: 15px; padding-top: 15px;">
-            <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.2rem;">
+    <div id="cart-panel" style="position: fixed; bottom: 30px; right: 30px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: none; min-width: 350px; border-top: 4px solid var(--accent-gold);">
+        <h3 style="margin: 0 0 20px 0; color: var(--primary-dark);">🛒 Корзина</h3>
+        <div id="cart-items" style="max-height: 250px; overflow-y: auto;"></div>
+        <div style="border-top: 2px solid #eee; margin-top: 20px; padding-top: 20px;">
+            <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 1.3rem; color: var(--primary-dark);">
                 <span>Итого:</span>
                 <span id="cart-total">0 ₽</span>
             </div>
             <input type="number" id="table-number" placeholder="№ столика (необязательно)" 
-                   style="width: 100%; padding: 10px; margin-top: 15px; border: 2px solid #ddd; border-radius: 8px;">
-            <button onclick="submitOrder()" style="width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px; border-radius: 8px; margin-top: 15px; cursor: pointer; font-weight: 700; font-size: 1rem;">
+                   style="width: 100%; padding: 12px; margin-top: 15px; border: 2px solid #e0e0e0; border-radius: 4px; font-size: 1rem;">
+            <button onclick="submitOrder()" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
                 ✅ Оформить заказ
             </button>
-            <button onclick="closeCart()" style="width: 100%; background: #f5f5f5; color: #666; border: none; padding: 10px; border-radius: 8px; margin-top: 10px; cursor: pointer;">
+            <button onclick="closeCart()" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
                 Закрыть
             </button>
         </div>
@@ -67,7 +74,12 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
         }
         
         updateCart();
-        alert(`${name} добавлен в корзину!`);
+        
+        // Анимация кнопки
+        this.textContent = '✓ Добавлено';
+        setTimeout(() => {
+            this.textContent = '🛒 В корзину';
+        }, 1000);
     });
 });
 
@@ -77,7 +89,7 @@ function updateCart() {
     const cartPanel = document.getElementById('cart-panel');
     
     if (cart.length === 0) {
-        cartItems.innerHTML = '<p style="color: #999;">Корзина пуста</p>';
+        cartItems.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Корзина пуста</p>';
         cartTotal.textContent = '0 ₽';
         cartPanel.style.display = 'none';
         return;
@@ -89,12 +101,12 @@ function updateCart() {
     cart.forEach((item, index) => {
         total += item.price * item.quantity;
         html += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee;">
                 <div>
-                    <div style="font-weight: 600;">${item.name}</div>
-                    <div style="color: #999; font-size: 0.9rem;">${item.quantity} x ${item.price} ₽</div>
+                    <div style="font-weight: 600; color: var(--primary-dark);">${item.name}</div>
+                    <div style="color: #999; font-size: 0.9rem;">${item.quantity} × ${item.price} ₽</div>
                 </div>
-                <button onclick="removeFromCart(${index})" style="background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">✕</button>
+                <button onclick="removeFromCart(${index})" style="background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">✕</button>
             </div>
         `;
     });
@@ -135,7 +147,6 @@ function submitOrder() {
     });
 }
 
-// Фильтр по категориям
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -152,11 +163,4 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     });
 });
 </script>
-
-<style>
-.client-home { padding: 20px; }
-.client-home h1 { text-align: center; margin-bottom: 30px; color: #333; }
-.filter-btn { padding: 10px 20px; border: 2px solid #667eea; background: white; color: #667eea; border-radius: 25px; cursor: pointer; margin: 5px; font-weight: 600; }
-.filter-btn.active, .filter-btn:hover { background: #667eea; color: white; }
-</style>
 {% endblock %}
