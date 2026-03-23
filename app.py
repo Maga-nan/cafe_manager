@@ -6,7 +6,7 @@ from routes.auth import auth_bp
 from routes.orders import orders_bp
 from routes.menu import menu_bp
 from routes.admin import admin_bp
-from routes.client import client_bp  # ← НОВОЕ!
+from routes.client import client_bp
 
 def create_app():
     app = Flask(__name__)
@@ -22,23 +22,20 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
     
-    # Регистрация blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(orders_bp, url_prefix='/orders')
     app.register_blueprint(menu_bp, url_prefix='/menu')
     app.register_blueprint(admin_bp)
-    app.register_blueprint(client_bp)  # ← НОВОЕ!
+    app.register_blueprint(client_bp)
     
-    # Главный маршрут
     @app.route('/')
     def index():
         if current_user.is_authenticated:
             if current_user.role == 'client':
                 return redirect(url_for('client.client_home'))
             return redirect(url_for('index_dashboard'))
-        return redirect(url_for('client.client_home'))  # ← Клиентская страница по умолчанию
+        return redirect(url_for('client.client_home'))
     
-    # Dashboard для сотрудников
     @app.route('/dashboard')
     @login_required
     def index_dashboard():
@@ -46,16 +43,47 @@ def create_app():
             return redirect(url_for('client.client_home'))
         return render_template('dashboard.html')
     
-    # Создание БД и админа
     with app.app_context():
         db.create_all()
+        
+        # Создание админа
         if not User.query.filter_by(username='admin').first():
-            admin = User(username='admin', email='admin@cafe.com', role='admin')
+            admin = User(
+                username='admin',
+                email='admin@cafe.com',
+                role='admin',
+                is_verified=True
+            )
             admin.set_password('admin123')
-            admin.is_verified = True
             db.session.add(admin)
             db.session.commit()
-            print("✅ Создан: admin / admin123")
+            print("✅ Создан: admin / admin123 (роль: admin)")
+        
+        # Создание кассира
+        if not User.query.filter_by(username='cashier1').first():
+            cashier = User(
+                username='cashier1',
+                email='cashier@cafe.com',
+                role='cashier',
+                is_verified=True
+            )
+            cashier.set_password('123456')
+            db.session.add(cashier)
+            db.session.commit()
+            print("✅ Создан: cashier1 / 123456 (роль: cashier)")
+        
+        # Создание клиента
+        if not User.query.filter_by(username='client1').first():
+            client = User(
+                username='client1',
+                email='client@test.com',
+                role='client',
+                is_verified=True
+            )
+            client.set_password('123456')
+            db.session.add(client)
+            db.session.commit()
+            print("✅ Создан: client1 / 123456 (роль: client)")
     
     return app
 
